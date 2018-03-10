@@ -34,3 +34,9 @@
 [LibraryClasses]
   UefiLib
   ShellCEntryLib
+  UefiRuntimeServicesTableLib
+  UefiBootServicesTableLib
+
+[Protocols]
+  gEfiUgaDrawProtocolGuid |gEfiMdePkgTokenSpaceGuid.PcdUgaConsumeSupport ## SOMETIMES_CONSUMES
+  gEfiGraphicsOutputProtocolGuid

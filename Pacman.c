@@ -14,7 +14,10 @@
 #include  <Uefi.h>
 #include  <Library/UefiLib.h>
 #include  <Library/ShellCEntryLib.h>
-
+#include  <Library/UefiApplicationEntryPoint.h>
+#include <Library/UefiRuntimeServicesTableLib.h>
+#include <Library/UefiBootServicesTableLib.h>
+#include <Protocol/GraphicsOutput.h>
 /***
   Print a welcoming message.
 
@@ -30,8 +33,37 @@ ShellAppMain (
   IN CHAR16 **Argv
   )
 {
-  Print(L"Hello there fellow Programmer.\n");
-  Print(L"Welcome to the world of EDK II.\n");
+//  EFI_GRAPHICS_OUTPUT_PROTOCOL  *GraphicsOutput;
+    EFI_GRAPHICS_OUTPUT_PROTOCOL        *Gop;
+
+    EFI_STATUS      status;
+    UINTN           handleCount;
+    EFI_HANDLE      *handleBuffer;
+
+    status = gBS->LocateHandleBuffer(
+                    ByProtocol,
+                    &gEfiGraphicsOutputProtocolGuid,
+                    NULL,
+                    &handleCount,
+                    &handleBuffer);
+  if (!EFI_ERROR(status)) {
+     Print(L"Found gop protocol\n");
+  }
+
+
+    status = gBS->HandleProtocol(
+                    handleBuffer[0],    // TODO
+                    &gEfiGraphicsOutputProtocolGuid,
+                    (VOID **)&(Gop));
+
+  if (!EFI_ERROR(status)) {
+     Print(L"gop Ready\n");
+  }
+
+  Gop->SetMode(Gop,Gop->Mode->MaxMode);
+  Print(L"H%d_V:%d\n",  Gop->Mode->Info->HorizontalResolution,
+             Gop->Mode->Info->VerticalResolution);
+
 
   return(0);
 }
