@@ -29,6 +29,7 @@
 
 [Packages]
   MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
   ShellPkg/ShellPkg.dec
 
 [LibraryClasses]
@@ -36,7 +37,7 @@
   ShellCEntryLib
   UefiRuntimeServicesTableLib
   UefiBootServicesTableLib
-
+  BmpSupportLib
 [Protocols]
   gEfiUgaDrawProtocolGuid |gEfiMdePkgTokenSpaceGuid.PcdUgaConsumeSupport ## SOMETIMES_CONSUMES
   gEfiGraphicsOutputProtocolGuid

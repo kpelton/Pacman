@@ -18,6 +18,9 @@
 #include <Library/UefiRuntimeServicesTableLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Protocol/GraphicsOutput.h>
+#include <Library/BmpSupportLib.h>
+#include "Pacman.h"
+
 /***
   Print a welcoming message.
 
@@ -26,16 +29,52 @@
   @retval  0         The application exited normally.
   @retval  Other     An error occurred.
 ***/
-INTN
-EFIAPI
-ShellAppMain (
-  IN UINTN Argc,
-  IN CHAR16 **Argv
+
+;
+struct PacMan{
+  EFI_GRAPHICS_OUTPUT_PROTOCOL        *Gop;
+  EFI_GRAPHICS_OUTPUT_BLT_PIXEL *Tiles[28];
+};
+
+STATIC
+VOID
+InitGop (
+  IN struct PacMan *Pac
+);
+
+STATIC
+VOID
+LoadTiles (
+   IN struct PacMan *Pac
+);
+
+STATIC
+VOID
+LoadTiles (
+  IN struct PacMan *Pac
   )
 {
-//  EFI_GRAPHICS_OUTPUT_PROTOCOL  *GraphicsOutput;
-    EFI_GRAPHICS_OUTPUT_PROTOCOL        *Gop;
-
+    UINTN                         BltSize;
+    UINTN                         Height;
+    UINTN                         Width;
+    UINTN                         i;
+     for (i=0; i<MAX_TILES; i++) {
+          TranslateBmpToGopBlt (
+                      Tiles[i],
+                      TILE_SIZE,
+                      &Pac->Tiles[i],
+                      &BltSize,
+                      &Height,
+                      &Width
+                      );
+        }
+}
+STATIC
+VOID
+InitGop (
+  IN struct PacMan *Pac
+  )
+  {
     EFI_STATUS      status;
     UINTN           handleCount;
     EFI_HANDLE      *handleBuffer;
@@ -54,16 +93,53 @@ ShellAppMain (
     status = gBS->HandleProtocol(
                     handleBuffer[0],    // TODO
                     &gEfiGraphicsOutputProtocolGuid,
-                    (VOID **)&(Gop));
+                    (VOID **)&(Pac->Gop));
 
   if (!EFI_ERROR(status)) {
-     Print(L"gop Ready\n");
+     Print(L"Found gop protocol\n");
   }
 
-  Gop->SetMode(Gop,Gop->Mode->MaxMode);
-  Print(L"H%d_V:%d\n",  Gop->Mode->Info->HorizontalResolution,
-             Gop->Mode->Info->VerticalResolution);
+
+}
 
 
+
+INTN
+EFIAPI
+ShellAppMain (
+  IN UINTN Argc,
+  IN CHAR16 **Argv
+  )
+{
+//  EFI_GRAPHICS_OUTPUT_PROTOCOL  *GraphicsOutput;
+  UINTN                         i;
+  UINTN                         j;
+  struct PacMan Pac;
+  for (i=0; i<MAX_TILES; i++) {
+    Pac.Tiles[i] = NULL;
+  }
+
+
+  InitGop(&Pac);
+  LoadTiles(&Pac);
+
+  Pac.Gop->SetMode(Pac.Gop,Pac.Gop->Mode->MaxMode);
+
+  for (j=0; j<25; j++) {
+    for (i=0; i<23; i++) {
+      Pac.Gop->Blt (
+               Pac.Gop,
+               Pac.Tiles[i],
+               EfiBltBufferToVideo,
+               0,
+               0,
+               i*TILE_WIDTH,
+               j*TILE_HEIGHT,
+               TILE_WIDTH,
+               TILE_HEIGHT,
+               TILE_WIDTH * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL)
+               );
+    }
+  }
   return(0);
 }
