@@ -33,8 +33,8 @@
 ;
 struct PacMan{
   EFI_GRAPHICS_OUTPUT_PROTOCOL        *Gop;
-  EFI_GRAPHICS_OUTPUT_BLT_PIXEL *Tiles[28];
-  UINTN TileMap[MAX_Y][23];
+  EFI_GRAPHICS_OUTPUT_BLT_PIXEL *Tiles[MAX_TILES];
+  UINTN TileMap[MAX_Y][MAX_X];
   UINTN PacX;
   UINTN PacY;
 };
@@ -85,7 +85,7 @@ InitGop (
   }
 
 
-    status = gBS->HandleProtocol(
+  status = gBS->HandleProtocol(
                     handleBuffer[0],    // TODO
                     &gEfiGraphicsOutputProtocolGuid,
                     (VOID **)&(Pac->Gop));
