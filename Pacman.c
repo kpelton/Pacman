@@ -34,20 +34,10 @@
 struct PacMan{
   EFI_GRAPHICS_OUTPUT_PROTOCOL        *Gop;
   EFI_GRAPHICS_OUTPUT_BLT_PIXEL *Tiles[28];
-  UINTN TileMap[25][23];
+  UINTN TileMap[MAX_Y][23];
+  UINTN PacX;
+  UINTN PacY;
 };
-
-STATIC
-VOID
-InitGop (
-  IN struct PacMan *Pac
-);
-
-STATIC
-VOID
-LoadTiles (
-   IN struct PacMan *Pac
-);
 
 STATIC
 VOID
@@ -55,12 +45,16 @@ LoadTiles (
   IN struct PacMan *Pac
   )
 {
-    UINTN                         BltSize;
-    UINTN                         Height;
-    UINTN                         Width;
-    UINTN                         i;
-     for (i=0; i<MAX_TILES; i++) {
-          TranslateBmpToGopBlt (
+  UINTN                         BltSize;
+  UINTN                         Height;
+  UINTN                         Width;
+  UINTN                         i;
+  for (i=0; i<MAX_TILES; i++) {
+    Pac->Tiles[i] = NULL;
+  }
+
+  for (i=0; i<MAX_TILES; i++) {
+    TranslateBmpToGopBlt (
                       Tiles[i],
                       TILE_SIZE,
                       &Pac->Tiles[i],
@@ -68,7 +62,7 @@ LoadTiles (
                       &Height,
                       &Width
                       );
-        }
+    }
 }
 STATIC
 VOID
@@ -76,11 +70,11 @@ InitGop (
   IN struct PacMan *Pac
   )
   {
-    EFI_STATUS      status;
-    UINTN           handleCount;
-    EFI_HANDLE      *handleBuffer;
+  EFI_STATUS      status;
+  UINTN           handleCount;
+  EFI_HANDLE      *handleBuffer;
 
-    status = gBS->LocateHandleBuffer(
+  status = gBS->LocateHandleBuffer(
                     ByProtocol,
                     &gEfiGraphicsOutputProtocolGuid,
                     NULL,
@@ -99,6 +93,7 @@ InitGop (
   if (!EFI_ERROR(status)) {
      Print(L"Found gop protocol\n");
   }
+  Pac->Gop->SetMode(Pac->Gop,Pac->Gop->Mode->MaxMode);
 
 
 }
@@ -112,8 +107,8 @@ DrawBoard (
   UINTN                         j;
 
 
-  for (j=0; j<25; j++) {
-    for (i=0; i<21; i++) {
+  for (j=0; j<MAX_Y; j++) {
+    for (i=0; i<MAX_X; i++) {
       Pac->Gop->Blt (
                Pac->Gop,
                Pac->Tiles[TileMap[j][i]],
@@ -129,7 +124,43 @@ DrawBoard (
     }
   }
 }
+STATIC
+VOID
+ReadKey (
+  IN struct PacMan *Pac
+  )
+{
+  EFI_INPUT_KEY Key;
+  gST->ConIn->ReadKeyStroke(gST->ConIn, &Key);
 
+
+  switch(Key.ScanCode)
+  {
+    case SCAN_DOWN:
+      TileMap[Pac->PacY][Pac->PacX] =BLANK;
+      if(Pac->PacY-1 < MAX_Y && (TileMap[Pac->PacY+1][Pac->PacX] == FOOD || TileMap[Pac->PacY+1][Pac->PacX] == BLANK ))
+        Pac->PacY++;
+      break;
+    case SCAN_UP:
+      TileMap[Pac->PacY][Pac->PacX] =BLANK;
+      if(Pac->PacY-1 >= 0 && (TileMap[Pac->PacY-1][Pac->PacX] == FOOD || TileMap[Pac->PacY-1][Pac->PacX] == BLANK ))
+        Pac->PacY--;
+      break;
+    case SCAN_LEFT:
+      TileMap[Pac->PacY][Pac->PacX] =BLANK;
+      if(Pac->PacX>= 0 && (TileMap[Pac->PacY][Pac->PacX-1] == FOOD || TileMap[Pac->PacY][Pac->PacX-1] == BLANK ))
+        Pac->PacX--;
+      break;
+
+    case SCAN_RIGHT:
+      TileMap[Pac->PacY][Pac->PacX] =BLANK;
+      if(Pac->PacX-1 < MAX_X && (TileMap[Pac->PacY][Pac->PacX+1] == FOOD || TileMap[Pac->PacY][Pac->PacX+1] == BLANK ))
+        Pac->PacX++;
+      break;
+    default:
+      break;
+    }
+}
 INTN
 EFIAPI
 ShellAppMain (
@@ -138,57 +169,20 @@ ShellAppMain (
   )
 {
 //  EFI_GRAPHICS_OUTPUT_PROTOCOL  *GraphicsOutput;
-  UINTN                         i;
-    EFI_INPUT_KEY Key;
+
   struct PacMan Pac;
-  UINTN PacX;
-  UINTN PacY;
-  for (i=0; i<MAX_TILES; i++) {
-    Pac.Tiles[i] = NULL;
-  }
 
 
   InitGop(&Pac);
   LoadTiles(&Pac);
-  DrawBoard(&Pac);
-  Pac.Gop->SetMode(Pac.Gop,Pac.Gop->Mode->MaxMode);
-  PacX = PAC_START_X;
-  PacY = PAC_START_Y;
+  Pac.PacX = PAC_START_X;
+  Pac.PacY = PAC_START_Y;
 
 
-
+  //Main Game loop
   for (;;) {
-    gST->ConIn->ReadKeyStroke(gST->ConIn, &Key);
-
-
-      switch(Key.ScanCode) 
-      {
-          case SCAN_DOWN:
-              TileMap[PacY][PacX] =BLANK;
-              if(PacY-1 < 25 && (TileMap[PacY+1][PacX] == FOOD || TileMap[PacY+1][PacX] == BLANK )) 
-                PacY++;
-          break;
-          
-          case SCAN_UP:
-             TileMap[PacY][PacX] =BLANK;
-             if(PacY-1 >= 0 && (TileMap[PacY-1][PacX] == FOOD || TileMap[PacY-1][PacX] == BLANK ))
-                PacY--;
-          break;
-          case SCAN_LEFT:
-              TileMap[PacY][PacX] =BLANK;
-              if(PacX>= 0 && (TileMap[PacY][PacX-1] == FOOD || TileMap[PacY][PacX-1] == BLANK ))
-              PacX--;
-          break;
-          
-          case SCAN_RIGHT:
-             TileMap[PacY][PacX] =BLANK;
-             if(PacX-1 < 21 && (TileMap[PacY][PacX+1] == FOOD || TileMap[PacY][PacX+1] == BLANK )) 
-              PacX++;
-          break;
-          
-          default:  break;
-    }
-    TileMap[PacY][PacX] = PAC;
+    ReadKey(&Pac);
+    TileMap[Pac.PacY][Pac.PacX] = PAC;
     DrawBoard(&Pac);
   }
   return(0);

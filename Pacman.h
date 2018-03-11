@@ -1,3 +1,7 @@
+#ifndef PACMAN_H
+#define PACMAN_H
+
+
 #define MAX_TILES 28
 #define TILE_SIZE 2646
 #define TILE_WIDTH  36
@@ -5,9 +9,12 @@
 #define PAC 20
 #define PAC_START_X 19
 #define PAC_START_Y 21
-#define FOOD 6
+#define FOOD 6 //Food tile 
 #define BLANK  27
-UINTN TileMap[25][21] = {
+#define MAX_Y 25
+#define MAX_X 21
+
+UINTN TileMap[MAX_Y][MAX_X] = {
 {5,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,0,3},
 {11,6,6,6,6,6,6,6,6,6,11,6,6,6,6,6,6,6,6,6,11},
 {11,6,18,23,17,6,18,23,17,6,11,6,18,23,17,6,18,23,17,6,11},
@@ -4684,3 +4691,4 @@ char Tiles[MAX_TILES][TILE_SIZE] =  {{ 0x42,0x4d,0x56,0x0a,0x00,0x00,0x00,0x00,0
 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
 0x00,0x00,0x00,0x00,0x00,0x00}
 };
+#endif
