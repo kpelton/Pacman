@@ -34,6 +34,7 @@
 struct PacMan{
   EFI_GRAPHICS_OUTPUT_PROTOCOL        *Gop;
   EFI_GRAPHICS_OUTPUT_BLT_PIXEL *Tiles[28];
+  UINTN TileMap[25][23];
 };
 
 STATIC
@@ -101,35 +102,21 @@ InitGop (
 
 
 }
-
-
-
-INTN
-EFIAPI
-ShellAppMain (
-  IN UINTN Argc,
-  IN CHAR16 **Argv
-  )
+STATIC
+VOID
+DrawBoard (
+  IN struct PacMan *Pac
+  ) 
 {
-//  EFI_GRAPHICS_OUTPUT_PROTOCOL  *GraphicsOutput;
   UINTN                         i;
   UINTN                         j;
-  struct PacMan Pac;
-  for (i=0; i<MAX_TILES; i++) {
-    Pac.Tiles[i] = NULL;
-  }
 
-
-  InitGop(&Pac);
-  LoadTiles(&Pac);
-
-  Pac.Gop->SetMode(Pac.Gop,Pac.Gop->Mode->MaxMode);
 
   for (j=0; j<25; j++) {
-    for (i=0; i<23; i++) {
-      Pac.Gop->Blt (
-               Pac.Gop,
-               Pac.Tiles[i],
+    for (i=0; i<21; i++) {
+      Pac->Gop->Blt (
+               Pac->Gop,
+               Pac->Tiles[TileMap[j][i]],
                EfiBltBufferToVideo,
                0,
                0,
@@ -140,6 +127,69 @@ ShellAppMain (
                TILE_WIDTH * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL)
                );
     }
+  }
+}
+
+INTN
+EFIAPI
+ShellAppMain (
+  IN UINTN Argc,
+  IN CHAR16 **Argv
+  )
+{
+//  EFI_GRAPHICS_OUTPUT_PROTOCOL  *GraphicsOutput;
+  UINTN                         i;
+    EFI_INPUT_KEY Key;
+  struct PacMan Pac;
+  UINTN PacX;
+  UINTN PacY;
+  for (i=0; i<MAX_TILES; i++) {
+    Pac.Tiles[i] = NULL;
+  }
+
+
+  InitGop(&Pac);
+  LoadTiles(&Pac);
+  DrawBoard(&Pac);
+  Pac.Gop->SetMode(Pac.Gop,Pac.Gop->Mode->MaxMode);
+  PacX = PAC_START_X;
+  PacY = PAC_START_Y;
+
+
+
+  for (;;) {
+    gST->ConIn->ReadKeyStroke(gST->ConIn, &Key);
+
+
+      switch(Key.ScanCode) 
+      {
+          case SCAN_DOWN:
+              TileMap[PacY][PacX] =BLANK;
+              if(PacY-1 < 25 && (TileMap[PacY+1][PacX] == FOOD || TileMap[PacY+1][PacX] == BLANK )) 
+                PacY++;
+          break;
+          
+          case SCAN_UP:
+             TileMap[PacY][PacX] =BLANK;
+             if(PacY-1 >= 0 && (TileMap[PacY-1][PacX] == FOOD || TileMap[PacY-1][PacX] == BLANK ))
+                PacY--;
+          break;
+          case SCAN_LEFT:
+              TileMap[PacY][PacX] =BLANK;
+              if(PacX>= 0 && (TileMap[PacY][PacX-1] == FOOD || TileMap[PacY][PacX-1] == BLANK ))
+              PacX--;
+          break;
+          
+          case SCAN_RIGHT:
+             TileMap[PacY][PacX] =BLANK;
+             if(PacX-1 < 21 && (TileMap[PacY][PacX+1] == FOOD || TileMap[PacY][PacX+1] == BLANK )) 
+              PacX++;
+          break;
+          
+          default:  break;
+    }
+    TileMap[PacY][PacX] = PAC;
+    DrawBoard(&Pac);
   }
   return(0);
 }
