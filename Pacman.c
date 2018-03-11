@@ -37,6 +37,8 @@ struct PacMan{
   UINTN TileMap[MAX_Y][MAX_X];
   UINTN PacX;
   UINTN PacY;
+  UINTN PacVX;
+  UINTN PacVY;
 };
 
 STATIC
@@ -136,26 +138,34 @@ ReadKey (
 
   switch(Key.ScanCode)
   {
-    case SCAN_DOWN:
-      TileMap[Pac->PacY][Pac->PacX] =BLANK;
-      if(Pac->PacY-1 < MAX_Y && (TileMap[Pac->PacY+1][Pac->PacX] == FOOD || TileMap[Pac->PacY+1][Pac->PacX] == BLANK ))
-        Pac->PacY++;
-      break;
+  case SCAN_DOWN:
+
+      if(Pac->PacY-1 < MAX_Y && (TileMap[Pac->PacY+1][Pac->PacX] == FOOD || TileMap[Pac->PacY+1][Pac->PacX] == BLANK )){
+        Pac->PacVY=1;
+        Pac->PacVX=0;
+      }   
+   break;
     case SCAN_UP:
-      TileMap[Pac->PacY][Pac->PacX] =BLANK;
-      if(Pac->PacY-1 >= 0 && (TileMap[Pac->PacY-1][Pac->PacX] == FOOD || TileMap[Pac->PacY-1][Pac->PacX] == BLANK ))
-        Pac->PacY--;
+
+      if(Pac->PacY-1 >= 0 && (TileMap[Pac->PacY-1][Pac->PacX] == FOOD || TileMap[Pac->PacY-1][Pac->PacX] == BLANK )) {
+        Pac->PacVY=-1;
+        Pac->PacVX=0;
+      }
       break;
     case SCAN_LEFT:
-      TileMap[Pac->PacY][Pac->PacX] =BLANK;
-      if(Pac->PacX>= 0 && (TileMap[Pac->PacY][Pac->PacX-1] == FOOD || TileMap[Pac->PacY][Pac->PacX-1] == BLANK ))
-        Pac->PacX--;
+
+      if(Pac->PacX>= 0 && (TileMap[Pac->PacY][Pac->PacX-1] == FOOD || TileMap[Pac->PacY][Pac->PacX-1] == BLANK )) {
+        Pac->PacVY=0;
+        Pac->PacVX=-1;      
+      }
       break;
 
     case SCAN_RIGHT:
-      TileMap[Pac->PacY][Pac->PacX] =BLANK;
-      if(Pac->PacX-1 < MAX_X && (TileMap[Pac->PacY][Pac->PacX+1] == FOOD || TileMap[Pac->PacY][Pac->PacX+1] == BLANK ))
-        Pac->PacX++;
+
+      if(Pac->PacX-1 < MAX_X && (TileMap[Pac->PacY][Pac->PacX+1] == FOOD || TileMap[Pac->PacY][Pac->PacX+1] == BLANK ))   {
+        Pac->PacVY=0;
+        Pac->PacVX=1;     
+      }
       break;
     default:
       break;
@@ -177,12 +187,25 @@ ShellAppMain (
   LoadTiles(&Pac);
   Pac.PacX = PAC_START_X;
   Pac.PacY = PAC_START_Y;
+  Pac.PacVX =0;
+  Pac.PacVY=0;
 
 
   //Main Game loop
   for (;;) {
     ReadKey(&Pac);
-    TileMap[Pac.PacY][Pac.PacX] = PAC;
+    gBS->Stall(150000);
+    ReadKey(&Pac);
+    if (Pac.PacX+Pac.PacVX>= 0  && Pac.PacX+Pac.PacVX< MAX_X && (TileMap[Pac.PacY][Pac.PacX+Pac.PacVX] == FOOD || TileMap[Pac.PacY][Pac.PacX+Pac.PacVX] == BLANK )){
+      TileMap[Pac.PacY][Pac.PacX] =BLANK;
+      Pac.PacX += Pac.PacVX;
+      TileMap[Pac.PacY][Pac.PacX] = PAC;    
+    }else if (Pac.PacY+Pac.PacVY < MAX_Y && Pac.PacY+Pac.PacVY  >= 0  && (TileMap[Pac.PacY+Pac.PacVY][Pac.PacX] == FOOD || TileMap[Pac.PacY+Pac.PacVY][Pac.PacX] == BLANK )){
+      TileMap[Pac.PacY][Pac.PacX] =BLANK;      
+      Pac.PacY += Pac.PacVY;
+      TileMap[Pac.PacY][Pac.PacX] = PAC;    
+
+  }
     DrawBoard(&Pac);
   }
   return(0);
